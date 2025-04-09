@@ -16,9 +16,6 @@ fn main() -> Result<()> {
 
     fix_indent(&mut f);
 
-    // println!("{:?}", f);
-    // f.iter().for_each(|s| println!("{}", get_indent_level(s)));
-
     fs::write("src/main.rs", f.join("\n"))?;
 
     Ok(())

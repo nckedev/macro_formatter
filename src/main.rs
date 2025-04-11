@@ -1,22 +1,34 @@
 mod error;
-use std::fs;
+use std::{env, fs};
 
 pub use error::{Error, Result};
 
-const MACRO: &str = "html!";
+const TARGET: &str = "html!";
 const OPEN: char = '{';
 const CLOSE: char = '}';
 const INDENT: usize = 4;
 
 fn main() -> Result<()> {
-    let mut f = fs::read_to_string("src/main.rs")?
+    let args = env::args().collect::<Vec<String>>();
+    let file = if args.len() > 1 {
+        let f = args[1].clone();
+        f
+    } else {
+        panic!("No file provided");
+    };
+
+    println!("file: {}", file);
+
+    let mut f = fs::read_to_string(&file)?
         .split('\n')
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
 
+    println!("lines: {:?}", f.len());
+
     fix_indent(&mut f);
 
-    fs::write("src/main.rs", f.join("\n"))?;
+    fs::write(&file, f.join("\n"))?;
 
     Ok(())
 }
@@ -107,18 +119,23 @@ fn find_macro(buf: &[String]) -> Vec<Span> {
         if line.starts_with("//") {
             continue;
         }
-        if line.contains(MACRO) {
+        if line.contains(TARGET) {
             inside_macro = true;
+            brackets += 1;
             span.start = i;
         }
         if inside_macro {
+            // TODO: a line can have many open/close brackets on the same line
             if line.contains(OPEN) {
                 brackets += 1;
-            } else if line.contains(CLOSE) {
+            }
+            if line.contains(CLOSE) {
                 brackets -= 1;
             }
+
             if brackets == 0 {
                 span.end = i;
+                assert!(span.start < span.end);
                 if span.start < span.end {
                     spans.push(span);
                 }
